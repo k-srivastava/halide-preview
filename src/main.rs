@@ -6,7 +6,24 @@ use halide::color::Color;
 use halide::ray::Ray;
 use halide::vector::{Point3D, Vector3D};
 
+fn hit_sphere(center: &Point3D, radius: f64, ray: &Ray) -> f64 {
+    let origin_center = ray.origin() - center.clone();
+
+    let a = ray.direction().length_squared();
+    let half_b = Vector3D::dot(&origin_center, &ray.direction());
+    let c = origin_center.length_squared() - radius.powi(2);
+
+    let discriminant = half_b.powi(2) - a * c;
+    return if discriminant < 0.0 { -1.0 } else { (-half_b - discriminant.sqrt()) / a };
+}
+
 fn ray_color(ray: &Ray) -> Color {
+    let depth = hit_sphere(&Point3D::new(0.0, 0.0, -1.0), 0.5, ray);
+    if depth > 0.0 {
+        let normal = (ray.at(depth) - Vector3D::new(0.0, 0.0, -1.0)).normalized();
+        return Color::new(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
+    }
+
     let direction_normal = ray.direction().normalized();
     let a = (direction_normal.y() + 1.0) * 0.5;
 

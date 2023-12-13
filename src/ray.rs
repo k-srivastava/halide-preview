@@ -1,5 +1,6 @@
 use crate::vector::{Point3D, Vector3D};
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ray {
     origin: Point3D,
     direction: Vector3D,
@@ -18,11 +19,7 @@ impl Ray {
         self.origin + self.direction * depth
     }
 
-    pub fn origin(&self) -> Point3D {
-        self.origin
-    }
+    pub fn origin(&self) -> Point3D { self.origin }
 
-    pub fn direction(&self) -> Vector3D {
-        self.direction
-    }
+    pub fn direction(&self) -> Vector3D { self.direction }
 }
