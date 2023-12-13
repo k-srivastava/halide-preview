@@ -1,6 +1,8 @@
 use std::io;
 use std::io::Write;
 
+use rand::Rng;
+
 use crate::color;
 use crate::color::Color;
 use crate::hittable::{HitRecord, Hittable};
@@ -11,6 +13,8 @@ use crate::vector::{Point3D, Vector3D};
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
+    pub samples_per_pixel: usize,
+
     image_height: usize,
     center: Point3D,
     pixel_location_100: Point3D,
@@ -23,6 +27,7 @@ impl Camera {
         Self {
             aspect_ratio: 1.0,
             image_width: 100,
+            samples_per_pixel: 10,
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
@@ -31,10 +36,11 @@ impl Camera {
         }
     }
 
-    pub fn new(aspect_ratio: f64, image_width: usize) -> Self {
+    pub fn new(aspect_ratio: f64, image_width: usize, samples_per_pixel: usize) -> Self {
         Self {
             aspect_ratio,
             image_width,
+            samples_per_pixel,
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
@@ -61,6 +67,25 @@ impl Camera {
         self.pixel_location_100 = viewport_upper_left + (self.pixel_delta_u + self.pixel_delta_v) * 0.5;
     }
 
+    fn pixel_sample_square(&self) -> Vector3D {
+        let mut rng = rand::thread_rng();
+
+        let px = -0.5 + rng.gen_range(0.0..1.0);
+        let py = -0.5 + rng.gen_range(0.0..1.0);
+
+        self.pixel_delta_u * px + self.pixel_delta_v * py
+    }
+
+    fn get_ray(&self, i: usize, j: usize) -> Ray {
+        let pixel_center = self.pixel_location_100 + (self.pixel_delta_u * i as f64) + (self.pixel_delta_v * j as f64);
+        let pixel_sample = pixel_center + self.pixel_sample_square();
+
+        let ray_origin = self.center.clone();
+        let ray_direction = pixel_sample - ray_origin;
+
+        Ray::new(ray_origin, ray_direction)
+    }
+
     fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
         let mut record = HitRecord::default();
 
@@ -84,13 +109,14 @@ impl Camera {
             io::stderr().flush().unwrap();
 
             for i in 0..self.image_width {
-                let pixel_center = self.pixel_location_100 + (self.pixel_delta_u * i as f64) + (self.pixel_delta_v * j as f64);
-                let ray_direction = pixel_center - self.center;
+                let mut pixel_color = Color::default();
 
-                let ray = Ray::new(self.center, ray_direction);
-                let pixel_color = Camera::ray_color(&ray, world);
+                for _ in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(i, j);
+                    pixel_color += Camera::ray_color(&ray, world);
+                }
 
-                color::write_color(&pixel_color);
+                color::write_color(&pixel_color, self.samples_per_pixel);
             }
         }
 
