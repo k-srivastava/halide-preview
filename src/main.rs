@@ -5,6 +5,7 @@ use std::sync::Arc;
 use halide::color;
 use halide::color::Color;
 use halide::hittable::{HitRecord, Hittable, HittableList};
+use halide::interval::Interval;
 use halide::ray::Ray;
 use halide::sphere::Sphere;
 use halide::vector::{Point3D, Vector3D};
@@ -12,7 +13,7 @@ use halide::vector::{Point3D, Vector3D};
 fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
     let mut record = HitRecord::default();
 
-    if world.hit(ray, 0.0, f64::INFINITY, &mut record) {
+    if world.hit(ray, &Interval::new(0.0, f64::INFINITY), &mut record) {
         return (record.normal + Color::new(1.0, 1.0, 1.0)) * 0.5;
     }
 

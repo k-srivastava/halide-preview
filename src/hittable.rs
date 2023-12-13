@@ -1,10 +1,11 @@
 use std::sync::Arc;
+use crate::interval::Interval;
 
 use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
 
 pub trait Hittable {
-    fn hit(&self, ray: &Ray, min_depth: f64, max_depth: f64, record: &mut HitRecord) -> bool;
+    fn hit(&self, ray: &Ray, interval: &Interval, record: &mut HitRecord) -> bool;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -46,13 +47,13 @@ impl HittableList {
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: &Ray, min_depth: f64, max_depth: f64, record: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, interval: &Interval, record: &mut HitRecord) -> bool {
         let mut temp_record = HitRecord::default();
         let mut hit_anything = false;
-        let mut closest_so_far = max_depth;
+        let mut closest_so_far = interval.max;
 
         for object in &self.objects {
-            if object.hit(ray, min_depth, closest_so_far, &mut temp_record) {
+            if object.hit(ray, &Interval::new(interval.min, closest_so_far), &mut temp_record) {
                 hit_anything = true;
                 closest_so_far = temp_record.depth;
 
