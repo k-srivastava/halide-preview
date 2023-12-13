@@ -1,4 +1,6 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Range, Sub, SubAssign};
+
+use rand::Rng;
 
 pub type Point3D = Vector3D;
 
@@ -44,6 +46,32 @@ impl Vector3D {
             lhs.values[2] * rhs.values[0] - lhs.values[0] * rhs.values[2],
             lhs.values[0] * rhs.values[1] - lhs.values[1] * rhs.values[0],
         )
+    }
+
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        Self::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0))
+    }
+
+    pub fn random_in_range(range: Range<f64>) -> Self {
+        let mut rng = rand::thread_rng();
+        Self::new(rng.gen_range(range.clone()), rng.gen_range(range.clone()), rng.gen_range(range.clone()))
+    }
+
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let point = Self::random_in_range(-1.0..1.0);
+            if point.length_squared() < 1.0 { return point; }
+        }
+    }
+
+    pub fn random_on_hemisphere(normal: &Self) -> Self {
+        let on_unit_sphere = Self::random_normal();
+        return if Self::dot(&on_unit_sphere, normal) > 0.0 { on_unit_sphere } else { -on_unit_sphere };
+    }
+
+    pub fn random_normal() -> Self {
+        Self::random_in_unit_sphere().normalized()
     }
 }
 

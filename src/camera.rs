@@ -14,6 +14,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
     pub samples_per_pixel: usize,
+    pub max_depth: usize,
 
     image_height: usize,
     center: Point3D,
@@ -28,6 +29,8 @@ impl Camera {
             aspect_ratio: 1.0,
             image_width: 100,
             samples_per_pixel: 10,
+            max_depth: 10,
+
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
@@ -36,11 +39,13 @@ impl Camera {
         }
     }
 
-    pub fn new(aspect_ratio: f64, image_width: usize, samples_per_pixel: usize) -> Self {
+    pub fn new(aspect_ratio: f64, image_width: usize, samples_per_pixel: usize, max_depth: usize) -> Self {
         Self {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            max_depth,
+
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
@@ -86,11 +91,14 @@ impl Camera {
         Ray::new(ray_origin, ray_direction)
     }
 
-    fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
+    fn ray_color(ray: &Ray, max_depth: usize, world: &dyn Hittable) -> Color {
         let mut record = HitRecord::default();
 
-        if world.hit(ray, &Interval::new(0.0, f64::INFINITY), &mut record) {
-            return (record.normal + Color::new(1.0, 1.0, 1.0)) * 0.5;
+        if max_depth <= 0 { return Color::default(); }
+
+        if world.hit(ray, &Interval::new(0.001, f64::INFINITY), &mut record) {
+            let direction = Vector3D::random_on_hemisphere(&record.normal);
+            return Camera::ray_color(&Ray::new(record.point, direction), max_depth - 1, world) * 0.5;
         }
 
         let direction_normal = ray.direction().normalized();
@@ -113,7 +121,7 @@ impl Camera {
 
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
-                    pixel_color += Camera::ray_color(&ray, world);
+                    pixel_color += Camera::ray_color(&ray, self.max_depth, world);
                 }
 
                 color::write_color(&pixel_color, self.samples_per_pixel);
