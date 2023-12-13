@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use crate::interval::Interval;
 
+use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
 
