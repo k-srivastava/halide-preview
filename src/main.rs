@@ -1,27 +1,19 @@
 use std::io;
 use std::io::Write;
+use std::sync::Arc;
 
 use halide::color;
 use halide::color::Color;
+use halide::hittable::{HitRecord, Hittable, HittableList};
 use halide::ray::Ray;
+use halide::sphere::Sphere;
 use halide::vector::{Point3D, Vector3D};
 
-fn hit_sphere(center: &Point3D, radius: f64, ray: &Ray) -> f64 {
-    let origin_center = ray.origin() - center.clone();
+fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
+    let mut record = HitRecord::default();
 
-    let a = ray.direction().length_squared();
-    let half_b = Vector3D::dot(&origin_center, &ray.direction());
-    let c = origin_center.length_squared() - radius.powi(2);
-
-    let discriminant = half_b.powi(2) - a * c;
-    return if discriminant < 0.0 { -1.0 } else { (-half_b - discriminant.sqrt()) / a };
-}
-
-fn ray_color(ray: &Ray) -> Color {
-    let depth = hit_sphere(&Point3D::new(0.0, 0.0, -1.0), 0.5, ray);
-    if depth > 0.0 {
-        let normal = (ray.at(depth) - Vector3D::new(0.0, 0.0, -1.0)).normalized();
-        return Color::new(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
+    if world.hit(ray, 0.0, f64::INFINITY, &mut record) {
+        return (record.normal + Color::new(1.0, 1.0, 1.0)) * 0.5;
     }
 
     let direction_normal = ray.direction().normalized();
@@ -34,6 +26,10 @@ fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let image_width: usize = 400;
     let image_height = (image_width as f64 / aspect_ratio) as usize;
+
+    let mut world = HittableList::default();
+    world.objects.push(Arc::new(Sphere::new(Point3D::new(0.0, 0.0, -1.0), 0.5)));
+    world.objects.push(Arc::new(Sphere::new(Point3D::new(0.0, -100.5, -1.0), 100.0)));
 
     let focal_length = 1.0;
     let viewport_height = 2.0;
@@ -61,7 +57,7 @@ fn main() {
             let ray_direction = pixel_center - camera_center;
 
             let ray = Ray::new(camera_center, ray_direction);
-            let pixel_color = ray_color(&ray);
+            let pixel_color = ray_color(&ray, &world);
 
             color::write_color(&pixel_color);
         }
