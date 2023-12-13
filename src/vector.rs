@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
+pub type Point3D = Vector3D;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vector3D {
     values: [f64; 3],
