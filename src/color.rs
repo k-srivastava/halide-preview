@@ -3,12 +3,16 @@ use crate::vector::Vector3D;
 
 pub type Color = Vector3D;
 
+fn linear_to_gamma(linear_component: f64) -> f64 {
+    linear_component.sqrt()
+}
+
 pub fn write_color(pixel_color: &Color, samples_per_pixel: usize) {
     let scale = 1.0 / samples_per_pixel as f64;
 
-    let red = pixel_color.x() * scale;
-    let green = pixel_color.y() * scale;
-    let blue = pixel_color.z() * scale;
+    let red = linear_to_gamma(pixel_color.x() * scale);
+    let green = linear_to_gamma(pixel_color.y() * scale);
+    let blue = linear_to_gamma(pixel_color.z() * scale);
 
     let intensity = Interval::new(0.000, 0.999);
 

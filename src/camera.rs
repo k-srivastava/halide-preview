@@ -97,8 +97,8 @@ impl Camera {
         if max_depth <= 0 { return Color::default(); }
 
         if world.hit(ray, &Interval::new(0.001, f64::INFINITY), &mut record) {
-            let direction = Vector3D::random_on_hemisphere(&record.normal);
-            return Camera::ray_color(&Ray::new(record.point, direction), max_depth - 1, world) * 0.5;
+            let direction = record.normal + Vector3D::random_normal();
+            return Camera::ray_color(&Ray::new(record.point, direction), max_depth - 1, world) * 0.1;
         }
 
         let direction_normal = ray.direction().normalized();
