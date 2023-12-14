@@ -55,6 +55,15 @@ impl Vector3D {
         *vector - *normal * Self::dot(vector, normal) * 2.0
     }
 
+    pub fn refract(uv: &Self, normal: &Self, eta_i_over_eta_t: f64) -> Self {
+        let cos_theta = Self::dot(&-uv.clone(), normal).min(1.0);
+
+        let ray_out_perpendicular = (normal.clone() * cos_theta + uv.clone()) * eta_i_over_eta_t;
+        let ray_out_parallel = normal.clone() * -(1.0 - ray_out_perpendicular.length_squared()).abs().sqrt();
+
+        ray_out_perpendicular + ray_out_parallel
+    }
+
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();
         Self::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0))

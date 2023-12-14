@@ -101,7 +101,13 @@ impl Camera {
                 Some(material) => {
                     let mut attentuation = Color::default();
 
-                    return if let Some(scattered) = material.scatter(ray, &record.point, &record.normal, &mut attentuation) {
+                    return if let Some(scattered) = material.scatter(
+                        ray,
+                        &record.point,
+                        &record.normal,
+                        record.front_face,
+                        &mut attentuation,
+                    ) {
                         attentuation * Camera::ray_color(&scattered, max_depth - 1, world)
                     } else {
                         Color::default()
