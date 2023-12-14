@@ -150,13 +150,16 @@ impl Camera {
     }
 
     fn get_ray(&self, i: usize, j: usize) -> Ray {
+        let mut rand = rand::thread_rng();
+
         let pixel_center = self.pixel_location_100 + (self.pixel_delta_u * i as f64) + (self.pixel_delta_v * j as f64);
         let pixel_sample = pixel_center + self.pixel_sample_square();
 
         let ray_origin = if self.defocus_angle <= 0.0 { self.center.clone() } else { self.defocus_disk_sample() };
         let ray_direction = pixel_sample - ray_origin;
+        let ray_time = rand.gen_range(0.0..0.1);
 
-        Ray::new(ray_origin, ray_direction)
+        Ray::new(ray_origin, ray_direction, ray_time)
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
@@ -182,35 +185,6 @@ impl Camera {
 
         eprintln!("\n\rDone.")
     }
-
-    // pub fn render_parallel(&mut self, world: Arc<&dyn Hittable>) {
-    //     self.initialize();
-    //
-    //     println!("P3\n{} {}\n255\n", self.image_width, self.image_height);
-    //
-    //     for j in 0..self.image_height {
-    //         eprint!("\rLines Remaining: {}", self.image_height - j);
-    //         io::stderr().flush().unwrap();
-    //
-    //         let pixel_colors: Vec<Color> = (0..self.image_width).into_par_iter().map(|i| {
-    //             let mut pixel_color = Color::default();
-    //
-    //             (0..self.samples_per_pixel).for_each(|_| {
-    //                 let ray = self.get_ray(i, j);
-    //                 pixel_color += Camera::ray_color_parallel(&ray, self.max_depth, world.clone())
-    //             });
-    //
-    //             pixel_color
-    //         }).collect();
-    //
-    //         for pixel_color in pixel_colors {
-    //             color::write_color(&pixel_color, self.samples_per_pixel);
-    //         }
-    //     }
-    //
-    //     eprintln!("\n\rDone.")
-    //
-    // }
 
     pub fn render_parallel(&mut self, world: Arc<&dyn Hittable>) {
         self.initialize();

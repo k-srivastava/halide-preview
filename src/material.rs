@@ -20,11 +20,11 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _ray_in: &Ray, record_point: &Vector3D, record_normal: &Vector3D, _record_front_face: bool, attenuation: &mut Color) -> Option<Ray> {
+    fn scatter(&self, ray_in: &Ray, record_point: &Vector3D, record_normal: &Vector3D, _record_front_face: bool, attenuation: &mut Color) -> Option<Ray> {
         let mut scatter_direction = *record_normal + Vector3D::random_normal();
         if scatter_direction.near_zero() { scatter_direction = record_normal.clone(); }
 
-        let scattered = Ray::new(record_point.clone(), scatter_direction);
+        let scattered = Ray::new(record_point.clone(), scatter_direction, ray_in.time());
 
         attenuation[0] = self.albedo.x();
         attenuation[1] = self.albedo.y();
@@ -47,7 +47,7 @@ impl Metal {
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, record_point: &Vector3D, record_normal: &Vector3D, _record_front_face: bool, attenuation: &mut Color) -> Option<Ray> {
         let reflected = Vector3D::reflect(&ray_in.direction().normalized(), record_normal);
-        let scattered = Ray::new(record_point.clone(), reflected + Vector3D::random_normal() * self.fuzz);
+        let scattered = Ray::new(record_point.clone(), reflected + Vector3D::random_normal() * self.fuzz, ray_in.time());
 
         attenuation[0] = self.albedo.x();
         attenuation[1] = self.albedo.y();
@@ -93,6 +93,6 @@ impl Material for Dielectric {
             Vector3D::refract(&direction_normal, record_normal, refraction_ratio)
         };
 
-        Some(Ray::new(record_point.clone(), direction))
+        Some(Ray::new(record_point.clone(), direction, ray_in.time()))
     }
 }
