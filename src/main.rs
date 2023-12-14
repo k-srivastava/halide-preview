@@ -31,6 +31,9 @@ fn main() {
         Point3D::new(-2.0, 2.0, 1.0),
         Point3D::new(0.0, 0.0, -1.0),
         Vector3D::new(0.0, 1.0, 0.0),
+        10.0,
+        3.4,
     );
+
     camera.render(&world);
 }

@@ -81,6 +81,15 @@ impl Vector3D {
         }
     }
 
+    pub fn random_in_unit_disk() -> Self {
+        let mut rng = rand::thread_rng();
+
+        loop {
+            let point = Self::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
+            if point.length_squared() < 1.0 { return point; }
+        }
+    }
+
     pub fn random_on_hemisphere(normal: &Self) -> Self {
         let on_unit_sphere = Self::random_normal();
         return if Self::dot(&on_unit_sphere, normal) > 0.0 { on_unit_sphere } else { -on_unit_sphere };
