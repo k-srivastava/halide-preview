@@ -15,9 +15,20 @@ impl Interval {
 
     pub fn new(min: f64, max: f64) -> Self { Self { min, max } }
 
+    pub fn from_interval_bounds(interval1: &Self, interval2: &Self) -> Self {
+        Self { min: interval1.min.min(interval2.min), max: interval1.max.max(interval2.max) }
+    }
+
+    pub fn size(&self) -> f64 { self.max - self.min }
+
     pub fn contains(&self, x: f64) -> bool { self.min <= x && x <= self.max }
 
     pub fn surrounds(&self, x: f64) -> bool { self.min < x && x < self.max }
+
+    pub fn expand(&self, delta: f64)  -> Self {
+        let padding = delta / 2.0;
+        Self::new(self.min - padding, self.max + padding)
+    }
 
     pub fn clamp(&self, x: f64) -> f64 {
         if x < self.min { return self.min; }

@@ -226,7 +226,7 @@ impl Camera {
     fn ray_color(ray: &Ray, max_depth: usize, world: &dyn Hittable) -> Color {
         if max_depth <= 0 { return Color::default(); }
 
-        if let Some(record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+        if let Some(record) = world.hit(ray, &mut Interval::new(0.001, f64::INFINITY)) {
             return match record.material {
                 None => Color::default(),
 
@@ -257,7 +257,7 @@ impl Camera {
     fn ray_color_parallel(ray: &Ray, max_depth: usize, world: Arc<&dyn Hittable>) -> Color {
         if max_depth <= 0 { return Color::default(); }
 
-        if let Some(record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+        if let Some(record) = world.hit(ray, &mut Interval::new(0.001, f64::INFINITY)) {
             return match record.material {
                 None => Color::default(),
 

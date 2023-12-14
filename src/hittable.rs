@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use crate::aabb::AABB;
 
 use crate::interval::Interval;
 use crate::material::Material;
@@ -6,7 +7,9 @@ use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
 
 pub trait Hittable: Send + Sync {
-    fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, interval: &mut Interval) -> Option<HitRecord>;
+
+    fn bounding_box(&self) -> AABB;
 }
 
 #[derive(Clone)]
@@ -47,21 +50,27 @@ impl HitRecord {
 
 pub struct HittableList {
     pub objects: Vec<Arc<dyn Hittable>>,
+    bounding_box: AABB,
 }
 
 impl HittableList {
-    pub fn default() -> Self { Self { objects: vec![] } }
+    pub fn default() -> Self { Self { objects: vec![], bounding_box: AABB::default() } }
 
-    pub fn new(object: Arc<dyn Hittable>) -> Self { Self { objects: vec![object] } }
+    pub fn new(object: Arc<dyn Hittable>) -> Self { Self { objects: vec![object.clone()], bounding_box: object.clone().bounding_box() } }
+
+    pub fn add_object(&mut self, object: Arc<dyn Hittable>) {
+        self.objects.push(object.clone());
+        self.bounding_box = AABB::from_aabb_bounds(&self.bounding_box, &object.clone().bounding_box());
+    }
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, interval: &mut Interval) -> Option<HitRecord> {
         let mut return_record: Option<HitRecord> = None;
         let mut closest_so_far = interval.max;
 
         for object in &self.objects {
-            if let Some(record) = object.hit(ray, &Interval::new(interval.min, closest_so_far)) {
+            if let Some(record) = object.hit(ray, &mut Interval::new(interval.min, closest_so_far)) {
                 closest_so_far = record.depth;
 
                 return_record = Some(record.clone());
@@ -70,4 +79,6 @@ impl Hittable for HittableList {
 
         return_record
     }
+
+    fn bounding_box(&self) -> AABB { self.bounding_box }
 }

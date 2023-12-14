@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::aabb::AABB;
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::material::Material;
@@ -13,15 +14,36 @@ pub struct Sphere {
     radius: f64,
     is_moving: bool,
     material: Arc<dyn Material>,
+    bounding_box: AABB,
 }
 
 impl Sphere {
     pub fn new_static(center: Point3D, radius: f64, material: Arc<dyn Material>) -> Self {
-        Self { center, center_vector: Vector3D::default(), radius, is_moving: false, material }
+        let radius_vector = Vector3D::new(radius, radius, radius);
+
+        Self {
+            center,
+            center_vector: Vector3D::default(),
+            radius,
+            is_moving: false,
+            material,
+            bounding_box: AABB::from_vector_bounds(&(center - radius_vector), &(center + radius_vector)),
+        }
     }
 
     pub fn new_dynamic(center1: Point3D, center2: Point3D, radius: f64, material: Arc<dyn Material>) -> Self {
-        Self { center: center1, center_vector: center2 - center1, radius, is_moving: true, material }
+        let radius_vector = Vector3D::new(radius, radius, radius);
+        let box1 = AABB::from_vector_bounds(&(center1 - radius_vector), &(center1 + radius_vector));
+        let box2 = AABB::from_vector_bounds(&(center2 - radius_vector), &(center2 + radius_vector));
+
+        Self {
+            center: center1,
+            center_vector: center2 - center1,
+            radius,
+            is_moving: true,
+            material,
+            bounding_box: AABB::from_aabb_bounds(&box1, &box2),
+        }
     }
 
     pub fn center(&self, time: f64) -> Point3D { self.center + self.center_vector * time }
@@ -32,7 +54,7 @@ unsafe impl Send for Sphere {}
 unsafe impl Sync for Sphere {}
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, interval: &mut Interval) -> Option<HitRecord> {
         let center = if self.is_moving { self.center(ray.time()) } else { self.center };
         let origin_center = ray.origin() - center;
 
@@ -61,4 +83,6 @@ impl Hittable for Sphere {
 
         Some(record)
     }
+
+    fn bounding_box(&self) -> AABB { self.bounding_box }
 }

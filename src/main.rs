@@ -14,7 +14,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    world.objects.push(Arc::new(Sphere::new_static(Point3D::new(0.0, -1000.0, 0.0), 1000.0, ground_material.clone())));
+    world.add_object(Arc::new(Sphere::new_static(Point3D::new(0.0, -1000.0, 0.0), 1000.0, ground_material.clone())));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -37,9 +37,9 @@ fn main() {
                 };
 
                 if center2.is_none() {
-                    world.objects.push(Arc::new(Sphere::new_static(center, 0.2, sphere_material)));
+                    world.add_object(Arc::new(Sphere::new_static(center, 0.2, sphere_material)));
                 } else {
-                    world.objects.push(Arc::new(Sphere::new_dynamic(center, center2.unwrap().normalized(), 0.2, sphere_material)));
+                    world.add_object(Arc::new(Sphere::new_dynamic(center, center2.unwrap().normalized(), 0.2, sphere_material)));
                 }
             }
         }
@@ -49,9 +49,11 @@ fn main() {
     let material_2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
     let material_3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
 
-    world.objects.push(Arc::new(Sphere::new_static(Point3D::new(0.0, 1.0, 0.0), 1.0, material_1)));
-    world.objects.push(Arc::new(Sphere::new_static(Point3D::new(-4.0, 1.0, 0.0), 1.0, material_2)));
-    world.objects.push(Arc::new(Sphere::new_static(Point3D::new(4.0, 1.0, 0.0), 1.0, material_3)));
+    world.add_object(Arc::new(Sphere::new_static(Point3D::new(0.0, 1.0, 0.0), 1.0, material_1)));
+    world.add_object(Arc::new(Sphere::new_static(Point3D::new(-4.0, 1.0, 0.0), 1.0, material_2)));
+    world.add_object(Arc::new(Sphere::new_static(Point3D::new(4.0, 1.0, 0.0), 1.0, material_3)));
+
+    // world = HittableList::new(Arc::new(BVHNode::from_hittable_list(&world)));
 
     let mut camera = Camera::new(
         16.0 / 9.0,
