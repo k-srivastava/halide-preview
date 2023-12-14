@@ -1,7 +1,9 @@
 use std::io;
 use std::io::Write;
+use std::sync::Arc;
 
 use rand::Rng;
+use rayon::prelude::*;
 
 use crate::color;
 use crate::color::Color;
@@ -181,6 +183,67 @@ impl Camera {
         eprintln!("\n\rDone.")
     }
 
+    // pub fn render_parallel(&mut self, world: Arc<&dyn Hittable>) {
+    //     self.initialize();
+    //
+    //     println!("P3\n{} {}\n255\n", self.image_width, self.image_height);
+    //
+    //     for j in 0..self.image_height {
+    //         eprint!("\rLines Remaining: {}", self.image_height - j);
+    //         io::stderr().flush().unwrap();
+    //
+    //         let pixel_colors: Vec<Color> = (0..self.image_width).into_par_iter().map(|i| {
+    //             let mut pixel_color = Color::default();
+    //
+    //             (0..self.samples_per_pixel).for_each(|_| {
+    //                 let ray = self.get_ray(i, j);
+    //                 pixel_color += Camera::ray_color_parallel(&ray, self.max_depth, world.clone())
+    //             });
+    //
+    //             pixel_color
+    //         }).collect();
+    //
+    //         for pixel_color in pixel_colors {
+    //             color::write_color(&pixel_color, self.samples_per_pixel);
+    //         }
+    //     }
+    //
+    //     eprintln!("\n\rDone.")
+    //
+    // }
+
+    pub fn render_parallel(&mut self, world: Arc<&dyn Hittable>) {
+        self.initialize();
+
+        println!("P3\n{} {}\n255\n", self.image_width, self.image_height);
+
+        let lines: Vec<Vec<Color>> = (0..self.image_height).into_par_iter().map(|j| {
+            eprint!("\rCurrent Line: {j}");
+            io::stderr().flush().unwrap();
+
+            let pixel_colors: Vec<Color> = (0..self.image_width).into_par_iter().map(|i| {
+                let mut pixel_color = Color::default();
+
+                (0..self.samples_per_pixel).for_each(|_| {
+                    let ray = self.get_ray(i, j);
+                    pixel_color += Camera::ray_color_parallel(&ray, self.max_depth, world.clone());
+                });
+
+                pixel_color
+            }).collect();
+
+            pixel_colors
+        }).collect();
+
+        for line in lines {
+            for pixel_color in line {
+                color::write_color(&pixel_color, self.samples_per_pixel);
+            }
+        }
+
+        eprintln!("\n\rDone.")
+    }
+
     fn defocus_disk_sample(&self) -> Point3D {
         let point = Vector3D::random_in_unit_disk();
         self.center + self.defocus_disk_u * point.x() + self.defocus_disk_v * point.y()
@@ -204,6 +267,37 @@ impl Camera {
                         &mut attenuation,
                     ) {
                         attenuation * Camera::ray_color(&scattered, max_depth - 1, world)
+                    } else {
+                        Color::default()
+                    };
+                }
+            };
+        }
+
+        let direction_normal = ray.direction().normalized();
+        let a = (direction_normal.y() + 1.0) * 0.5;
+
+        Color::new(1.0, 1.0, 1.0) * (1.0 - a) + Color::new(0.5, 0.7, 1.0) * a
+    }
+
+    fn ray_color_parallel(ray: &Ray, max_depth: usize, world: Arc<&dyn Hittable>) -> Color {
+        if max_depth <= 0 { return Color::default(); }
+
+        if let Some(record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+            return match record.material {
+                None => Color::default(),
+
+                Some(material) => {
+                    let mut attenuation = Color::default();
+
+                    return if let Some(scattered) = material.scatter(
+                        ray,
+                        &record.point,
+                        &record.normal,
+                        record.front_face,
+                        &mut attenuation,
+                    ) {
+                        attenuation * Camera::ray_color_parallel(&scattered, max_depth - 1, world)
                     } else {
                         Color::default()
                     };

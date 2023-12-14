@@ -5,7 +5,7 @@ use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord>;
 }
 

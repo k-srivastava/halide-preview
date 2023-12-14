@@ -19,6 +19,10 @@ impl Sphere {
     }
 }
 
+unsafe impl Send for Sphere {}
+
+unsafe impl Sync for Sphere {}
+
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord> {
         let origin_center = ray.origin() - self.center;
