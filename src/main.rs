@@ -5,7 +5,7 @@ use halide::color::Color;
 use halide::hittable::HittableList;
 use halide::material::{Dielectric, Lambertian, Metal};
 use halide::sphere::Sphere;
-use halide::vector::Point3D;
+use halide::vector::{Point3D, Vector3D};
 
 fn main() {
     let mut world = HittableList::default();
@@ -22,6 +22,15 @@ fn main() {
     world.objects.push(Arc::new(Sphere::new(Point3D::new(-1.0, 0.0, -1.0), -0.4, left_material.clone())));
     world.objects.push(Arc::new(Sphere::new(Point3D::new(1.0, 0.0, -1.0), 0.5, right_material.clone())));
 
-    let mut camera = Camera::new(16.0 / 9.0, 400, 100, 50);
+    let mut camera = Camera::new(
+        16.0 / 9.0,
+        400,
+        100,
+        50,
+        20.0,
+        Point3D::new(-2.0, 2.0, 1.0),
+        Point3D::new(0.0, 0.0, -1.0),
+        Vector3D::new(0.0, 1.0, 0.0),
+    );
     camera.render(&world);
 }

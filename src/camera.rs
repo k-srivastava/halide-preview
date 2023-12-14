@@ -15,12 +15,19 @@ pub struct Camera {
     pub image_width: usize,
     pub samples_per_pixel: usize,
     pub max_depth: usize,
+    pub vertical_fov: f64,
+    pub look_from: Point3D,
+    pub look_at: Point3D,
+    pub vertical_up: Vector3D,
 
     image_height: usize,
     center: Point3D,
     pixel_location_100: Point3D,
     pixel_delta_u: Vector3D,
     pixel_delta_v: Vector3D,
+    u: Vector3D,
+    v: Vector3D,
+    w: Vector3D,
 }
 
 impl Camera {
@@ -30,45 +37,75 @@ impl Camera {
             image_width: 100,
             samples_per_pixel: 10,
             max_depth: 10,
+            vertical_fov: 90.0,
+            look_from: Point3D::new(0.0, 0.0, -1.0),
+            look_at: Point3D::default(),
+            vertical_up: Vector3D::new(0.0, 1.0, 0.0),
 
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
             pixel_delta_u: Vector3D::default(),
             pixel_delta_v: Vector3D::default(),
+            u: Vector3D::default(),
+            v: Vector3D::default(),
+            w: Vector3D::default(),
         }
     }
 
-    pub fn new(aspect_ratio: f64, image_width: usize, samples_per_pixel: usize, max_depth: usize) -> Self {
+    pub fn new(
+        aspect_ratio: f64,
+        image_width: usize,
+        samples_per_pixel: usize,
+        max_depth: usize,
+        vertical_fov: f64,
+        look_from: Point3D,
+        look_at: Point3D,
+        vertical_up: Vector3D
+    ) -> Self {
         Self {
             aspect_ratio,
             image_width,
             samples_per_pixel,
             max_depth,
+            vertical_fov,
+            look_from,
+            look_at,
+            vertical_up,
 
             image_height: usize::default(),
             center: Point3D::default(),
             pixel_location_100: Point3D::default(),
             pixel_delta_u: Vector3D::default(),
             pixel_delta_v: Vector3D::default(),
+            u: Vector3D::default(),
+            v: Vector3D::default(),
+            w: Vector3D::default(),
         }
     }
 
     fn initialize(&mut self) {
         self.image_height = (self.image_width as f64 / self.aspect_ratio) as usize;
-        self.center = Point3D::default();
+        self.center = self.look_from;
 
-        let focal_length = 1.0;
-        let viewport_height = 2.0;
+        let focal_length = (self.look_from - self.look_at).length();
+        let theta = self.vertical_fov.to_radians();
+        let height = (theta / 2.0).tan();
+
+        let viewport_height = height * focal_length * 2.0;
         let viewport_width = viewport_height * (self.image_width as f64 / self.image_height as f64);
 
-        let viewport_u = Vector3D::new(viewport_width, 0.0, 0.0);
-        let viewport_v = Vector3D::new(0.0, -viewport_height, 0.0);
+        self.w = (self.look_from - self.look_at).normalized();
+        self.u = Vector3D::cross(&self.vertical_up, &self.w).normalized();
+        self.v = Vector3D::cross(&self.w, &self.u);
+
+        let viewport_u = self.u * viewport_width;
+        let viewport_v = -self.v * viewport_height;
 
         self.pixel_delta_u = viewport_u / self.image_width as f64;
         self.pixel_delta_v = viewport_v / self.image_height as f64;
 
-        let viewport_upper_left = self.center - Vector3D::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+        let viewport_upper_left = self.center - self.w * focal_length - viewport_u / 2.0 - viewport_v / 2.0;
         self.pixel_location_100 = viewport_upper_left + (self.pixel_delta_u + self.pixel_delta_v) * 0.5;
     }
 
@@ -99,16 +136,16 @@ impl Camera {
                 None => Color::default(),
 
                 Some(material) => {
-                    let mut attentuation = Color::default();
+                    let mut attenuation = Color::default();
 
                     return if let Some(scattered) = material.scatter(
                         ray,
                         &record.point,
                         &record.normal,
                         record.front_face,
-                        &mut attentuation,
+                        &mut attenuation,
                     ) {
-                        attentuation * Camera::ray_color(&scattered, max_depth - 1, world)
+                        attenuation * Camera::ray_color(&scattered, max_depth - 1, world)
                     } else {
                         Color::default()
                     };
