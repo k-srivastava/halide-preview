@@ -1,17 +1,19 @@
 use std::sync::Arc;
 
 use crate::interval::Interval;
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
 
 pub trait Hittable {
-    fn hit(&self, ray: &Ray, interval: &Interval, record: &mut HitRecord) -> bool;
+    fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord>;
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub point: Point3D,
     pub normal: Vector3D,
+    pub material: Option<Arc<dyn Material>>,
     pub depth: f64,
     pub front_face: bool,
 }
@@ -21,9 +23,20 @@ impl HitRecord {
         Self {
             point: Point3D::default(),
             normal: Vector3D::default(),
+            material: None,
             depth: f64::default(),
             front_face: bool::default(),
         }
+    }
+
+    pub fn new(
+        point: Point3D,
+        normal: Vector3D,
+        material: Option<Arc<dyn Material>>,
+        depth: f64,
+        front_face: bool,
+    ) -> Self {
+        Self { point, normal, material, depth, front_face }
     }
 
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: &Vector3D) {
@@ -37,33 +50,24 @@ pub struct HittableList {
 }
 
 impl HittableList {
-    pub fn default() -> Self {
-        Self { objects: vec![] }
-    }
+    pub fn default() -> Self { Self { objects: vec![] } }
 
-    pub fn new(object: Arc<dyn Hittable>) -> Self {
-        Self { objects: vec![object] }
-    }
+    pub fn new(object: Arc<dyn Hittable>) -> Self { Self { objects: vec![object] } }
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, ray: &Ray, interval: &Interval, record: &mut HitRecord) -> bool {
-        let mut temp_record = HitRecord::default();
-        let mut hit_anything = false;
+    fn hit(&self, ray: &Ray, interval: &Interval) -> Option<HitRecord> {
+        let mut return_record: Option<HitRecord> = None;
         let mut closest_so_far = interval.max;
 
         for object in &self.objects {
-            if object.hit(ray, &Interval::new(interval.min, closest_so_far), &mut temp_record) {
-                hit_anything = true;
-                closest_so_far = temp_record.depth;
+            if let Some(record) = object.hit(ray, &Interval::new(interval.min, closest_so_far)) {
+                closest_so_far = record.depth;
 
-                record.point = temp_record.point;
-                record.normal = temp_record.normal;
-                record.depth = temp_record.depth;
-                record.front_face = temp_record.front_face;
+                return_record = Some(record.clone());
             }
         }
 
-        hit_anything
+        return_record
     }
 }

@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Range, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Range, Sub, SubAssign};
 
 use rand::Rng;
 
@@ -32,8 +32,11 @@ impl Vector3D {
         self.values[0].powi(2) + self.values[1].powi(2) + self.values[2].powi(2)
     }
 
-    pub fn normalized(&self) -> Self {
-        *self / self.length()
+    pub fn normalized(&self) -> Self { *self / self.length() }
+
+    pub fn near_zero(&self) -> bool {
+        let delta = 1e-8;
+        self.values[0].abs() < delta && self.values[1].abs() < delta && self.values[2].abs() < delta
     }
 
     pub fn dot(lhs: &Self, rhs: &Self) -> f64 {
@@ -46,6 +49,10 @@ impl Vector3D {
             lhs.values[2] * rhs.values[0] - lhs.values[0] * rhs.values[2],
             lhs.values[0] * rhs.values[1] - lhs.values[1] * rhs.values[0],
         )
+    }
+
+    pub fn reflect(vector: &Self, normal: &Self) -> Self {
+        *vector - *normal * Self::dot(vector, normal) * 2.0
     }
 
     pub fn random() -> Self {
@@ -84,6 +91,16 @@ impl Index<usize> for Vector3D {
         }
 
         &self.values[index]
+    }
+}
+
+impl IndexMut<usize> for Vector3D {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        if index > 2 {
+            panic!("Cannot access index {index} for Vector3D.");
+        }
+
+        &mut self.values[index]
     }
 }
 
@@ -136,10 +153,18 @@ impl SubAssign for Vector3D {
 }
 
 impl Mul<f64> for Vector3D {
-    type Output = Vector3D;
+    type Output = Self;
 
     fn mul(self, scalar: f64) -> Self::Output {
         Self::new(self.values[0] * scalar, self.values[1] * scalar, self.values[2] * scalar)
+    }
+}
+
+impl Mul<Vector3D> for Vector3D {
+    type Output = Self;
+
+    fn mul(self, rhs: Vector3D) -> Self::Output {
+        Self::new(self.x() * rhs.x(), self.y() * rhs.y(), self.z() * rhs.z())
     }
 }
 

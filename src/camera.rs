@@ -5,7 +5,7 @@ use rand::Rng;
 
 use crate::color;
 use crate::color::Color;
-use crate::hittable::{HitRecord, Hittable};
+use crate::hittable::Hittable;
 use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::vector::{Point3D, Vector3D};
@@ -92,13 +92,22 @@ impl Camera {
     }
 
     fn ray_color(ray: &Ray, max_depth: usize, world: &dyn Hittable) -> Color {
-        let mut record = HitRecord::default();
-
         if max_depth <= 0 { return Color::default(); }
 
-        if world.hit(ray, &Interval::new(0.001, f64::INFINITY), &mut record) {
-            let direction = record.normal + Vector3D::random_normal();
-            return Camera::ray_color(&Ray::new(record.point, direction), max_depth - 1, world) * 0.1;
+        if let Some(record) = world.hit(ray, &Interval::new(0.001, f64::INFINITY)) {
+            return match record.material {
+                None => Color::default(),
+
+                Some(material) => {
+                    let mut attentuation = Color::default();
+
+                    return if let Some(scattered) = material.scatter(ray, &record.point, &record.normal, &mut attentuation) {
+                        attentuation * Camera::ray_color(&scattered, max_depth - 1, world)
+                    } else {
+                        Color::default()
+                    };
+                }
+            };
         }
 
         let direction_normal = ray.direction().normalized();
